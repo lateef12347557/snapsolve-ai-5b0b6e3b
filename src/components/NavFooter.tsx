@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Sparkles } from "lucide-react";
+import { Link } from "react-router-dom";
 
 const Navbar = () => (
   <motion.nav
@@ -9,26 +10,29 @@ const Navbar = () => (
     animate={{ opacity: 1, y: 0 }}
     transition={{ duration: 0.5 }}
   >
-    <div className="flex items-center gap-2">
+    <Link to="/" className="flex items-center gap-2">
       <Sparkles className="w-6 h-6 text-primary" />
       <span className="text-lg font-bold text-foreground">SnapSolve AI</span>
-    </div>
+    </Link>
     <div className="hidden md:flex items-center gap-8 text-sm text-muted-foreground">
-      <a href="#features" className="hover:text-foreground transition-colors">Features</a>
-      <a href="#demo" className="hover:text-foreground transition-colors">Demo</a>
-      <a href="#pricing" className="hover:text-foreground transition-colors">Pricing</a>
+      <a href="/#features" className="hover:text-foreground transition-colors">Features</a>
+      <a href="/#demo" className="hover:text-foreground transition-colors">Demo</a>
+      <Link to="/solve" className="hover:text-foreground transition-colors">Solver</Link>
+      <a href="/#pricing" className="hover:text-foreground transition-colors">Pricing</a>
     </div>
-    <Button variant="hero" size="sm">Get Started</Button>
+    <Button variant="hero" size="sm" asChild>
+      <Link to="/solve">Start Solving</Link>
+    </Button>
   </motion.nav>
 );
 
 const Footer = () => (
   <footer className="border-t border-border/30 py-12 px-6">
     <div className="max-w-5xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
-      <div className="flex items-center gap-2">
+      <Link to="/" className="flex items-center gap-2">
         <Sparkles className="w-5 h-5 text-primary" />
         <span className="font-bold text-foreground">SnapSolve AI</span>
-      </div>
+      </Link>
       <p className="text-sm text-muted-foreground">© 2026 SnapSolve AI. Reimagining education through AI.</p>
     </div>
   </footer>
