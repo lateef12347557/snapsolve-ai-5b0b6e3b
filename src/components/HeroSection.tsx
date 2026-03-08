@@ -52,9 +52,11 @@ const HeroSection = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.45 }}
         >
-          <Button variant="hero" size="lg" className="text-base px-8 py-6">
-            <Zap className="w-5 h-5" />
-            Start Solving Free
+          <Button variant="hero" size="lg" className="text-base px-8 py-6" asChild>
+            <Link to="/solve">
+              <Zap className="w-5 h-5" />
+              Start Solving Free
+            </Link>
           </Button>
           <Button variant="hero-outline" size="lg" className="text-base px-8 py-6">
             <Play className="w-5 h-5" />
