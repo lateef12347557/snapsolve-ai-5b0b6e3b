@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import { Camera, Mic, PenTool, Play, Sparkles, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Link } from "react-router-dom";
 
 const HeroSection = () => {
   return (
