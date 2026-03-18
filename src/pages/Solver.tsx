@@ -222,7 +222,12 @@ const SolverPage = () => {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
               >
-                <SolutionDisplay content={solution} isLoading={isLoading} />
+              <SolutionDisplay content={solution} isLoading={isLoading} />
+                {!isLoading && solution && (
+                  <div className="mt-6">
+                    <VideoExplanation solution={solution} />
+                  </div>
+                )}
               </motion.div>
             )}
           </AnimatePresence>
