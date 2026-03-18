@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { streamSolve } from "@/lib/ai-solver";
 import SolutionDisplay from "@/components/SolutionDisplay";
+import VideoExplanation from "@/components/VideoExplanation";
 import { Navbar } from "@/components/NavFooter";
 import { toast } from "sonner";
 
@@ -221,7 +222,12 @@ const SolverPage = () => {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
               >
-                <SolutionDisplay content={solution} isLoading={isLoading} />
+              <SolutionDisplay content={solution} isLoading={isLoading} />
+                {!isLoading && solution && (
+                  <div className="mt-6">
+                    <VideoExplanation solution={solution} />
+                  </div>
+                )}
               </motion.div>
             )}
           </AnimatePresence>
