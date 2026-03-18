@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { streamSolve } from "@/lib/ai-solver";
 import SolutionDisplay from "@/components/SolutionDisplay";
+import VideoExplanation from "@/components/VideoExplanation";
 import { Navbar } from "@/components/NavFooter";
 import { toast } from "sonner";
 
