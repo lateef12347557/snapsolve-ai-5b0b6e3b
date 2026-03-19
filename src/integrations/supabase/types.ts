@@ -14,6 +14,57 @@ export type Database = {
   }
   public: {
     Tables: {
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          display_name: string
+          id: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          display_name?: string
+          id: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          display_name?: string
+          id?: string
+        }
+        Relationships: []
+      }
+      solution_history: {
+        Row: {
+          created_at: string
+          id: string
+          image_url: string | null
+          question: string
+          solution: string
+          subject: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          question: string
+          solution: string
+          subject?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          question?: string
+          solution?: string
+          subject?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       study_room_messages: {
         Row: {
           created_at: string
@@ -21,6 +72,7 @@ export type Database = {
           message: string
           message_type: string
           room_id: string
+          user_id: string | null
           user_name: string
         }
         Insert: {
@@ -29,6 +81,7 @@ export type Database = {
           message: string
           message_type?: string
           room_id: string
+          user_id?: string | null
           user_name?: string
         }
         Update: {
@@ -37,6 +90,7 @@ export type Database = {
           message?: string
           message_type?: string
           room_id?: string
+          user_id?: string | null
           user_name?: string
         }
         Relationships: [
@@ -57,6 +111,7 @@ export type Database = {
           is_active: boolean
           name: string
           subject: string | null
+          user_id: string | null
         }
         Insert: {
           created_at?: string
@@ -65,6 +120,7 @@ export type Database = {
           is_active?: boolean
           name: string
           subject?: string | null
+          user_id?: string | null
         }
         Update: {
           created_at?: string
@@ -73,6 +129,7 @@ export type Database = {
           is_active?: boolean
           name?: string
           subject?: string | null
+          user_id?: string | null
         }
         Relationships: []
       }
