@@ -1,10 +1,11 @@
 import { useState, useEffect, useRef } from "react";
-import { useParams, useSearchParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Send, ArrowLeft, Users, Loader2, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Navbar } from "@/components/NavFooter";
+import DashboardLayout from "@/components/DashboardLayout";
+import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { streamSolve } from "@/lib/ai-solver";
 import { toast } from "sonner";
@@ -16,8 +17,8 @@ import "katex/dist/katex.min.css";
 
 const StudyRoom = () => {
   const { roomId } = useParams<{ roomId: string }>();
-  const [searchParams] = useSearchParams();
-  const userName = searchParams.get("user") || "Anonymous";
+  const { user, profile } = useAuth();
+  const userName = profile?.display_name || "Anonymous";
   const [room, setRoom] = useState<any>(null);
   const [messages, setMessages] = useState<any[]>([]);
   const [input, setInput] = useState("");
@@ -61,7 +62,7 @@ const StudyRoom = () => {
     if (!input.trim()) return;
     const msg = input.trim();
     setInput("");
-    await supabase.from("study_room_messages").insert({ room_id: roomId!, user_name: userName, message: msg });
+    await supabase.from("study_room_messages").insert({ room_id: roomId!, user_name: userName, message: msg, user_id: user?.id });
   };
 
   const askAI = async () => {
@@ -70,10 +71,8 @@ const StudyRoom = () => {
     setInput("");
     setAiLoading(true);
 
-    // Post user question
-    await supabase.from("study_room_messages").insert({ room_id: roomId!, user_name: userName, message: question });
+    await supabase.from("study_room_messages").insert({ room_id: roomId!, user_name: userName, message: question, user_id: user?.id });
 
-    // Stream AI response
     let aiResponse = "";
     await streamSolve({
       question,
@@ -88,11 +87,10 @@ const StudyRoom = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
-      <Navbar />
-      <div className="pt-20 flex-1 flex flex-col max-w-3xl mx-auto w-full px-4">
+    <DashboardLayout>
+      <div className="flex-1 flex flex-col max-w-3xl mx-auto w-full h-[calc(100vh-8rem)]">
         {/* Header */}
-        <div className="flex items-center gap-3 py-4 border-b border-border/50">
+        <div className="flex items-center gap-3 pb-4 border-b border-border/50">
           <Link to="/rooms"><ArrowLeft className="w-5 h-5 text-muted-foreground hover:text-foreground transition-colors" /></Link>
           <div className="flex-1 min-w-0">
             <h2 className="font-semibold text-foreground truncate">{room?.name || "Loading..."}</h2>
@@ -104,7 +102,7 @@ const StudyRoom = () => {
         </div>
 
         {/* Messages */}
-        <div className="flex-1 overflow-y-auto py-4 space-y-3 min-h-0" style={{ maxHeight: "calc(100vh - 220px)" }}>
+        <div className="flex-1 overflow-y-auto py-4 space-y-3 min-h-0">
           {loading ? (
             <div className="flex justify-center py-8"><Loader2 className="w-5 h-5 animate-spin text-primary" /></div>
           ) : messages.length === 0 ? (
@@ -152,7 +150,7 @@ const StudyRoom = () => {
           </Button>
         </div>
       </div>
-    </div>
+    </DashboardLayout>
   );
 };
 
