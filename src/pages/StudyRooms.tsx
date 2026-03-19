@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Plus, Users, BookOpen, Loader2 } from "lucide-react";
+import { Plus, Users, BookOpen, Loader2, Trash2, Archive } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Navbar } from "@/components/NavFooter";
@@ -52,6 +52,22 @@ const StudyRooms = () => {
     if (error) toast.error("Failed to create room");
     else { setNewRoomName(""); setShowCreate(false); toast.success("Room created!"); fetchRooms(); }
     setCreating(false);
+  };
+
+  const archiveRoom = async (e: React.MouseEvent, roomId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const { error } = await supabase.from("study_rooms").update({ is_active: false }).eq("id", roomId);
+    if (error) toast.error("Failed to archive room");
+    else { toast.success("Room archived"); fetchRooms(); }
+  };
+
+  const deleteRoom = async (e: React.MouseEvent, roomId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const { error } = await supabase.from("study_rooms").delete().eq("id", roomId);
+    if (error) toast.error("Failed to delete room");
+    else { toast.success("Room deleted"); fetchRooms(); }
   };
 
   return (
@@ -126,7 +142,15 @@ const StudyRooms = () => {
                     className="block rounded-2xl bg-gradient-card border border-border/50 p-5 hover:border-primary/30 transition-all group">
                     <div className="flex items-start justify-between mb-2">
                       <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors">{room.name}</h3>
-                      {room.subject && <span className="text-xs px-2 py-1 rounded-full bg-primary/10 text-primary">{room.subject}</span>}
+                      <div className="flex items-center gap-1">
+                        {room.subject && <span className="text-xs px-2 py-1 rounded-full bg-primary/10 text-primary">{room.subject}</span>}
+                        <button onClick={(e) => archiveRoom(e, room.id)} className="p-1.5 rounded-lg text-muted-foreground hover:text-yellow-400 hover:bg-yellow-400/10 transition-colors" title="Archive">
+                          <Archive className="w-3.5 h-3.5" />
+                        </button>
+                        <button onClick={(e) => deleteRoom(e, room.id)} className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors" title="Delete">
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
                     </div>
                     <p className="text-sm text-muted-foreground">Created by {room.created_by}</p>
                   </Link>
