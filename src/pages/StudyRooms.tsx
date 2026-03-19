@@ -54,6 +54,22 @@ const StudyRooms = () => {
     setCreating(false);
   };
 
+  const archiveRoom = async (e: React.MouseEvent, roomId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const { error } = await supabase.from("study_rooms").update({ is_active: false }).eq("id", roomId);
+    if (error) toast.error("Failed to archive room");
+    else { toast.success("Room archived"); fetchRooms(); }
+  };
+
+  const deleteRoom = async (e: React.MouseEvent, roomId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const { error } = await supabase.from("study_rooms").delete().eq("id", roomId);
+    if (error) toast.error("Failed to delete room");
+    else { toast.success("Room deleted"); fetchRooms(); }
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
