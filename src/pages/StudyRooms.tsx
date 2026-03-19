@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Plus, Users, BookOpen, Loader2 } from "lucide-react";
+import { Plus, Users, BookOpen, Loader2, Trash2, Archive } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Navbar } from "@/components/NavFooter";
