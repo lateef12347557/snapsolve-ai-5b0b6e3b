@@ -50,7 +50,7 @@ const StudyRooms = () => {
       created_by: userName.trim(),
     });
     if (error) toast.error("Failed to create room");
-    else { setNewRoomName(""); setShowCreate(false); toast.success("Room created!"); }
+    else { setNewRoomName(""); setShowCreate(false); toast.success("Room created!"); fetchRooms(); }
     setCreating(false);
   };
 
