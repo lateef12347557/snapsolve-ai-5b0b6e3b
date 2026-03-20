@@ -1,4 +1,5 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Camera, Send, X, Loader2, Upload, BookOpen, Atom, Calculator, FlaskConical, GraduationCap, Lightbulb, Globe, Palette, Code, Music, Leaf } from "lucide-react";
 import { Button } from "@/components/ui/button";
