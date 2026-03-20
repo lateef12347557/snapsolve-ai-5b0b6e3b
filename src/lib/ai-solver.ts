@@ -4,6 +4,7 @@ type StreamChatOptions = {
   question: string;
   subject?: string;
   imageBase64?: string;
+  mode?: "solve" | "explain";
   onDelta: (text: string) => void;
   onDone: () => void;
   onError: (error: string) => void;
@@ -13,6 +14,7 @@ export async function streamSolve({
   question,
   subject,
   imageBase64,
+  mode = "solve",
   onDelta,
   onDone,
   onError,
@@ -25,7 +27,7 @@ export async function streamSolve({
       "Content-Type": "application/json",
       Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
     },
-    body: JSON.stringify({ question, subject, imageBase64 }),
+    body: JSON.stringify({ question, subject, imageBase64, mode }),
   });
 
   if (!resp.ok) {

@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Calculator, Users, History, ArrowRight, Sparkles } from "lucide-react";
+import { Calculator, Users, History, ArrowRight, Sparkles, GraduationCap } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import DashboardLayout from "@/components/DashboardLayout";
@@ -12,6 +12,14 @@ const quickActions = [
     href: "/solve",
     color: "text-primary",
     bg: "bg-primary/10",
+  },
+  {
+    title: "Explain a Topic",
+    desc: "Learn any topic in any subject — get clear explanations with examples",
+    icon: GraduationCap,
+    href: "/solve?mode=explain",
+    color: "text-amber-400",
+    bg: "bg-amber-400/10",
   },
   {
     title: "Study Rooms",
@@ -46,7 +54,7 @@ const Dashboard = () => {
         </motion.div>
 
         {/* Quick actions */}
-        <div className="grid gap-4 md:grid-cols-3">
+        <div className="grid gap-4 md:grid-cols-2">
           {quickActions.map((action, i) => (
             <motion.div key={action.title} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }}>
               <Link
@@ -77,7 +85,7 @@ const Dashboard = () => {
           <div>
             <p className="text-sm font-medium text-foreground mb-1">Pro Tip</p>
             <p className="text-sm text-muted-foreground">
-              You can upload a photo of any math, physics, or chemistry problem and our AI will solve it step-by-step with explanations!
+              Use "Explain a Topic" to learn anything — from photosynthesis to the French Revolution. Or snap a photo of a problem and let AI solve it step by step!
             </p>
           </div>
         </motion.div>
