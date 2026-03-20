@@ -109,7 +109,9 @@ export type Database = {
           created_by: string
           id: string
           is_active: boolean
+          is_private: boolean
           name: string
+          room_code: string | null
           subject: string | null
           user_id: string | null
         }
@@ -118,7 +120,9 @@ export type Database = {
           created_by?: string
           id?: string
           is_active?: boolean
+          is_private?: boolean
           name: string
+          room_code?: string | null
           subject?: string | null
           user_id?: string | null
         }
@@ -127,7 +131,9 @@ export type Database = {
           created_by?: string
           id?: string
           is_active?: boolean
+          is_private?: boolean
           name?: string
+          room_code?: string | null
           subject?: string | null
           user_id?: string | null
         }
