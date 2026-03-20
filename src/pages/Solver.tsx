@@ -34,7 +34,8 @@ type Mode = "solve" | "explain";
 
 const SolverPage = () => {
   const { user } = useAuth();
-  const [mode, setMode] = useState<Mode>("solve");
+  const [searchParams] = useSearchParams();
+  const [mode, setMode] = useState<Mode>((searchParams.get("mode") as Mode) || "solve");
   const [question, setQuestion] = useState("");
   const [subject, setSubject] = useState<string | undefined>();
   const [imagePreview, setImagePreview] = useState<string | null>(null);
