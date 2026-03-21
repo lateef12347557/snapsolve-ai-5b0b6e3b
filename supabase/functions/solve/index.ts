@@ -21,10 +21,9 @@ serve(async (req) => {
     const subjectContext = subject ? `The subject is ${subject}. ` : "";
 
     if (mode === "explain") {
-      // Topic explanation mode
       userContent.push({
         type: "text",
-        text: `${subjectContext}Explain this topic in detail with clear examples, analogies, and real-world applications. Make it engaging and easy to understand for a student.\n\nTopic: ${question}`,
+        text: `${subjectContext}Explain this topic in detail with clear examples, analogies, and real-world applications. Make it engaging and easy to understand for a student. Give a very thorough, comprehensive explanation.\n\nTopic: ${question}`,
       });
     } else if (imageBase64) {
       userContent.push({
@@ -33,12 +32,12 @@ serve(async (req) => {
       });
       userContent.push({
         type: "text",
-        text: `${subjectContext}Look at this image of a problem. Solve it step by step with clear explanations. Use LaTeX notation for math (wrap in $...$ for inline, $$...$$ for display). ${question ? `Additional context: ${question}` : ""}`,
+        text: `${subjectContext}Look at this image of a problem. Solve it step by step with clear explanations. Write all math in plain English words, never use dollar signs or LaTeX. ${question ? `Additional context: ${question}` : ""}`,
       });
     } else {
       userContent.push({
         type: "text",
-        text: `${subjectContext}Solve this problem step by step with clear explanations. Use LaTeX notation for math (wrap in $...$ for inline, $$...$$ for display).\n\nProblem: ${question}`,
+        text: `${subjectContext}Solve this problem step by step with clear explanations. Write all math in plain English words, never use dollar signs or LaTeX.\n\nProblem: ${question}`,
       });
     }
 
@@ -48,23 +47,27 @@ serve(async (req) => {
 Your response format for topic explanations:
 1. **What is it?**: A clear, concise definition
 2. **Key Concepts**: The main ideas and principles to understand
-3. **How it Works**: Detailed explanation with step-by-step breakdown. Use LaTeX for any math.
+3. **How it Works**: Detailed explanation with step-by-step breakdown. Write math in plain words.
 4. **Real-World Examples**: 2-3 practical examples or applications
 5. **Analogies**: Simple analogies to make it relatable
 6. **Fun Fact**: An interesting fact that makes the topic memorable
 7. **Quick Summary**: A 2-3 sentence recap
 
-Be encouraging, clear, and educational. Use analogies and vivid examples. Make complex topics accessible.`
-      : `You are SnapSolve AI, an expert tutor in Math, Physics, and Chemistry. 
+CRITICAL RULE: Write ALL math expressions in plain English words. NEVER use dollar signs ($), LaTeX notation, backslashes, or special math symbols like ^, _, {, }. For example write "x squared plus 5x plus 6 equals zero" not "$x^2 + 5x + 6 = 0$". Write "the square root of 9 is 3" not "$\\sqrt{9} = 3$". Write "one half" not "1/2" when in sentences.
+
+Be encouraging, clear, and educational. Use analogies and vivid examples. Make complex topics accessible. Give detailed, thorough explanations so students fully understand.`
+      : `You are SnapSolve AI, an expert tutor in Math, Physics, Chemistry, and more.
 
 Your response format:
 1. **Understanding**: Briefly restate what the problem is asking
-2. **Key Concepts**: List the relevant formulas/concepts needed
-3. **Step-by-Step Solution**: Solve with detailed, clear steps. Use LaTeX for all math.
-4. **Final Answer**: Clearly state the answer, boxed if possible: $$\\boxed{answer}$$
+2. **Key Concepts**: List the relevant formulas/concepts needed, written in plain words
+3. **Step-by-Step Solution**: Solve with detailed, clear steps. Write math in plain English words.
+4. **Final Answer**: Clearly state the answer
 5. **Intuition**: Explain WHY the answer makes sense in 1-2 sentences
 
-Be encouraging, clear, and educational. Use analogies when helpful.`;
+CRITICAL RULE: Write ALL math expressions in plain English words. NEVER use dollar signs ($), LaTeX notation, backslashes, or special math symbols like ^, _, {, }. For example write "x squared plus 5x plus 6 equals zero" not "$x^2 + 5x + 6 = 0$". Write "the square root of 16 is 4" not "$\\sqrt{16} = 4$". Write fractions as words like "three fourths" not "3/4".
+
+Be encouraging, clear, and educational. Use analogies when helpful. Give thorough, detailed explanations so students fully understand each step.`;
 
     const response = await fetch(
       "https://ai.gateway.lovable.dev/v1/chat/completions",

@@ -16,7 +16,7 @@ interface Slide {
 
 function parseSolutionToSlides(solution: string): Slide[] {
   const slides: Slide[] = [];
-  const sections = solution.split(/(?=#{1,3}\s|\*\*\d+\.\s|\*\*Step|\*\*Understanding|\*\*Key Concepts|\*\*Final Answer|\*\*Intuition)/);
+  const sections = solution.split(/(?=#{1,3}\s|\*\*\d+\.\s|\*\*Step|\*\*Understanding|\*\*Key Concepts|\*\*Final Answer|\*\*Intuition|\*\*What is it|\*\*How it Works|\*\*Real-World|\*\*Analogies|\*\*Fun Fact|\*\*Quick Summary)/);
 
   for (const section of sections) {
     const trimmed = section.trim();
@@ -26,31 +26,47 @@ function parseSolutionToSlides(solution: string): Slide[] {
     const title = titleMatch?.[1]?.replace(/[*#]/g, "").trim() || "Step";
     const body = trimmed.replace(/^.*?\n/, "").trim() || trimmed;
 
-    // Extract bullet points
     const bullets = body.match(/(?:^|\n)\s*[-•*]\s+(.+)/g)?.map(b => b.replace(/^\s*[-•*]\s+/, "").trim()) || [];
     
-    // If content is long, split into multiple slides
+    // Split content more aggressively to create more slides (targeting ~15 slides for 5 min)
     const sentences = body.split(/(?<=[.!?])\s+/).filter(s => s.trim().length > 5);
-    if (sentences.length > 6) {
-      const mid = Math.ceil(sentences.length / 2);
-      slides.push({
-        title: title.slice(0, 60),
-        content: sentences.slice(0, mid).join(" "),
-        bulletPoints: bullets.slice(0, 3),
-      });
-      slides.push({
-        title: `${title.slice(0, 50)} (cont.)`,
-        content: sentences.slice(mid).join(" "),
-        bulletPoints: bullets.slice(3),
-      });
+    if (sentences.length > 4) {
+      const chunkSize = Math.ceil(sentences.length / Math.ceil(sentences.length / 3));
+      for (let i = 0; i < sentences.length; i += chunkSize) {
+        const chunk = sentences.slice(i, i + chunkSize);
+        const partNum = Math.floor(i / chunkSize) + 1;
+        slides.push({
+          title: i === 0 ? title.slice(0, 60) : `${title.slice(0, 50)} (part ${partNum})`,
+          content: chunk.join(" "),
+          bulletPoints: i === 0 ? bullets.slice(0, 3) : [],
+        });
+      }
     } else {
       slides.push({ title: title.slice(0, 60), content: body, bulletPoints: bullets });
     }
   }
 
+  // If we have too few slides, split further to target ~15 slides for 5 min video
+  if (slides.length < 10 && solution.trim()) {
+    const allContent = slides.map(s => s.content).join(" ");
+    const sentences = allContent.split(/(?<=[.!?])\s+/).filter(s => s.trim().length > 15);
+    if (sentences.length >= 10) {
+      const newSlides: Slide[] = [];
+      const chunkSize = Math.max(2, Math.ceil(sentences.length / 15));
+      for (let i = 0; i < sentences.length; i += chunkSize) {
+        newSlides.push({
+          title: `Part ${Math.floor(i / chunkSize) + 1}`,
+          content: sentences.slice(i, i + chunkSize).join(" "),
+          bulletPoints: [],
+        });
+      }
+      return newSlides;
+    }
+  }
+
   if (slides.length === 0 && solution.trim()) {
     const sentences = solution.split(/[.!?]\s+/).filter(s => s.trim().length > 15);
-    const chunkSize = Math.ceil(sentences.length / Math.min(6, Math.max(3, Math.floor(sentences.length / 2))));
+    const chunkSize = Math.max(2, Math.ceil(sentences.length / 15));
     for (let i = 0; i < sentences.length; i += chunkSize) {
       slides.push({
         title: `Part ${Math.floor(i / chunkSize) + 1}`,
@@ -78,7 +94,7 @@ const VideoExplanation = ({ solution }: VideoExplanationProps) => {
   const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
   const [selectedVoiceIndex, setSelectedVoiceIndex] = useState(0);
   const [showVoiceMenu, setShowVoiceMenu] = useState(false);
-  const [speed, setSpeed] = useState(0.95);
+  const [speed, setSpeed] = useState(0.9);
   const timerRef = useRef<ReturnType<typeof setInterval>>();
   const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
 
@@ -100,14 +116,29 @@ const VideoExplanation = ({ solution }: VideoExplanationProps) => {
     };
   }, []);
 
+  const cleanTextForSpeech = (text: string): string => {
+    return text
+      .replace(/\$\$[^$]*\$\$/g, "") // remove display LaTeX
+      .replace(/\$[^$]*\$/g, "") // remove inline LaTeX
+      .replace(/\\boxed\{[^}]*\}/g, "") // remove boxed
+      .replace(/\\frac\{([^}]*)\}\{([^}]*)\}/g, "$1 over $2") // fractions
+      .replace(/\\sqrt\{([^}]*)\}/g, "square root of $1") // sqrt
+      .replace(/\\[a-zA-Z]+/g, "") // remove remaining LaTeX commands
+      .replace(/[{}\\[\]|]/g, "") // remove braces/brackets
+      .replace(/\*\*/g, "") // remove markdown bold
+      .replace(/[#*_~`]/g, "") // remove markdown formatting
+      .replace(/\s+/g, " ") // normalize whitespace
+      .trim();
+  };
+
   const speakSlide = (index: number) => {
     speechSynthesis.cancel();
     if (!voiceEnabled) return;
-    const text = slides[index]?.content.replace(/[*#$\\{}[\]]/g, "").replace(/\s+/g, " ").trim();
+    const text = cleanTextForSpeech(slides[index]?.content || "");
     if (!text) return;
     const utt = new SpeechSynthesisUtterance(text);
     utt.rate = speed;
-    utt.pitch = 1;
+    utt.pitch = 1.05;
     if (voices[selectedVoiceIndex]) utt.voice = voices[selectedVoiceIndex];
     utt.onstart = () => setIsSpeaking(true);
     utt.onend = () => setIsSpeaking(false);
@@ -142,7 +173,7 @@ const VideoExplanation = ({ solution }: VideoExplanationProps) => {
           speakSlide(next);
           return next;
         });
-      }, 10000);
+      }, 20000); // 20 seconds per slide for longer explanations
     }
   };
 
@@ -150,7 +181,8 @@ const VideoExplanation = ({ solution }: VideoExplanationProps) => {
 
   const anim = slideAnimations[currentSlide % slideAnimations.length];
   const slide = slides[currentSlide];
-  const cleanContent = slide?.content.replace(/[*#]/g, "").slice(0, 400);
+  const cleanContent = slide?.content.replace(/[*#]/g, "").slice(0, 500);
+  const totalMinutes = Math.ceil((slides.length * 20) / 60);
 
   return (
     <div className="rounded-2xl bg-gradient-card border border-border/50 shadow-elevated overflow-hidden">
@@ -158,7 +190,7 @@ const VideoExplanation = ({ solution }: VideoExplanationProps) => {
       <div className="flex items-center gap-2 px-6 py-4 border-b border-border/50">
         <Video className="w-4 h-4 text-accent" />
         <span className="text-sm font-semibold text-foreground">AI Video Explanation</span>
-        <span className="text-xs text-muted-foreground ml-auto">{currentSlide + 1} / {slides.length}</span>
+        <span className="text-xs text-muted-foreground ml-auto">{currentSlide + 1} / {slides.length} · ~{totalMinutes} min</span>
       </div>
 
       {/* Slide display */}
@@ -186,6 +218,20 @@ const VideoExplanation = ({ solution }: VideoExplanationProps) => {
         >
           {currentSlide + 1}
         </motion.div>
+
+        {/* Speaking indicator */}
+        {isSpeaking && (
+          <motion.div
+            className="absolute top-4 right-4 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20"
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+          >
+            <motion.div className="w-1.5 h-1.5 rounded-full bg-primary" animate={{ scale: [1, 1.4, 1] }} transition={{ repeat: Infinity, duration: 0.8 }} />
+            <motion.div className="w-1.5 h-1.5 rounded-full bg-primary" animate={{ scale: [1, 1.4, 1] }} transition={{ repeat: Infinity, duration: 0.8, delay: 0.2 }} />
+            <motion.div className="w-1.5 h-1.5 rounded-full bg-primary" animate={{ scale: [1, 1.4, 1] }} transition={{ repeat: Infinity, duration: 0.8, delay: 0.4 }} />
+            <span className="text-xs text-primary font-medium ml-1">Speaking</span>
+          </motion.div>
+        )}
 
         <AnimatePresence mode="wait">
           <motion.div
@@ -224,7 +270,7 @@ const VideoExplanation = ({ solution }: VideoExplanationProps) => {
                     transition={{ delay: 0.4 + i * 0.12 }}
                   >
                     <span className="w-1.5 h-1.5 rounded-full bg-primary mt-1.5 shrink-0" />
-                    <span>{bp.replace(/[*#$\\]/g, "").slice(0, 80)}</span>
+                    <span>{bp.replace(/[*#$\\]/g, "").slice(0, 100)}</span>
                   </motion.div>
                 ))}
               </div>
@@ -238,7 +284,7 @@ const VideoExplanation = ({ solution }: VideoExplanationProps) => {
               transition={{ delay: 0.35 }}
             >
               {cleanContent}
-              {(slide?.content.length || 0) > 400 ? "..." : ""}
+              {(slide?.content.length || 0) > 500 ? "..." : ""}
             </motion.p>
           </motion.div>
         </AnimatePresence>
@@ -294,7 +340,7 @@ const VideoExplanation = ({ solution }: VideoExplanationProps) => {
         </div>
 
         {/* Slide dots */}
-        <div className="flex justify-center gap-1.5">
+        <div className="flex justify-center gap-1.5 flex-wrap">
           {slides.map((_, i) => (
             <button
               key={i}
