@@ -22,13 +22,12 @@ function parseSolutionToSlides(solution: string): Slide[] {
     const trimmed = section.trim();
     if (!trimmed || trimmed.length < 10) continue;
 
-    const titleMatch = trimmed.match(/^(?:#{1,3}\s*)?(?:\*\*)?(.+?)(?:\*\*)?(?:\n|$)/);
+    const titleMatch = trimmed.match(/^(?:#{1,3}\s*)?(?:(?:\*\*|\d+\.\s))?(.+?)(?:(?:\*\*|\s\d+\.\s))?(?:\n|$)/);
     const title = titleMatch?.[1]?.replace(/[*#]/g, "").trim() || "Step";
     const body = trimmed.replace(/^.*?\n/, "").trim() || trimmed;
 
     const bullets = body.match(/(?:^|\n)\s*[-•*]\s+(.+)/g)?.map(b => b.replace(/^\s*[-•*]\s+/, "").trim()) || [];
     
-    // Split content more aggressively to create more slides (targeting ~15 slides for 5 min)
     const sentences = body.split(/(?<=[.!?])\s+/).filter(s => s.trim().length > 5);
     if (sentences.length > 4) {
       const chunkSize = Math.ceil(sentences.length / Math.ceil(sentences.length / 3));
@@ -46,7 +45,6 @@ function parseSolutionToSlides(solution: string): Slide[] {
     }
   }
 
-  // If we have too few slides, split further to target ~15 slides for 5 min video
   if (slides.length < 10 && solution.trim()) {
     const allContent = slides.map(s => s.content).join(" ");
     const sentences = allContent.split(/(?<=[.!?])\s+/).filter(s => s.trim().length > 15);
@@ -105,7 +103,14 @@ const VideoExplanation = ({ solution }: VideoExplanationProps) => {
   useEffect(() => {
     const loadVoices = () => {
       const available = speechSynthesis.getVoices().filter(v => v.lang.startsWith("en"));
-      if (available.length > 0) setVoices(available);
+      if (available.length > 0) {
+        setVoices(available);
+        // Prefer a natural sounding voice
+        const preferred = available.findIndex(v =>
+          /samantha|karen|daniel|google.*us|natural/i.test(v.name)
+        );
+        if (preferred >= 0) setSelectedVoiceIndex(preferred);
+      }
     };
     loadVoices();
     speechSynthesis.addEventListener("voiceschanged", loadVoices);
@@ -117,38 +122,91 @@ const VideoExplanation = ({ solution }: VideoExplanationProps) => {
   }, []);
 
   const cleanTextForSpeech = (text: string): string => {
-    return text
-      .replace(/\$\$[^$]*\$\$/g, "") // remove display LaTeX
-      .replace(/\$[^$]*\$/g, "") // remove inline LaTeX
-      .replace(/\\boxed\{[^}]*\}/g, "") // remove boxed
-      .replace(/\\frac\{([^}]*)\}\{([^}]*)\}/g, "$1 over $2") // fractions
-      .replace(/\\sqrt\{([^}]*)\}/g, "square root of $1") // sqrt
-      .replace(/\\[a-zA-Z]+/g, "") // remove remaining LaTeX commands
-      .replace(/[{}\\[\]|]/g, "") // remove braces/brackets
-      .replace(/\*\*/g, "") // remove markdown bold
-      .replace(/[#*_~`]/g, "") // remove markdown formatting
-      .replace(/\s+/g, " ") // normalize whitespace
-      .trim();
+    let cleaned = text;
+    // Replace display LaTeX $$...$$ — keep inner content as readable text
+    cleaned = cleaned.replace(/\$\$(.+?)\$\$/gs, (_, inner) => inner);
+    // Replace inline LaTeX $...$ — keep inner content
+    cleaned = cleaned.replace(/\$(.+?)\$/g, (_, inner) => inner);
+    // Convert common LaTeX commands to spoken words
+    cleaned = cleaned.replace(/\\boxed{([^}]*)}/g, "$1");
+    cleaned = cleaned.replace(/\\frac{([^}]*)}{([^}]*)}/g, "$1 over $2");
+    cleaned = cleaned.replace(/\\sqrt{([^}]*)}/g, "square root of $1");
+    cleaned = cleaned.replace(/\\times/g, " times ");
+    cleaned = cleaned.replace(/\\div/g, " divided by ");
+    cleaned = cleaned.replace(/\\pm/g, " plus or minus ");
+    cleaned = cleaned.replace(/\\approx/g, " approximately ");
+    cleaned = cleaned.replace(/\\neq/g, " not equal to ");
+    cleaned = cleaned.replace(/\\leq/g, " less than or equal to ");
+    cleaned = cleaned.replace(/\\geq/g, " greater than or equal to ");
+    cleaned = cleaned.replace(/\\cdot/g, " times ");
+    cleaned = cleaned.replace(/\\infty/g, " infinity ");
+    cleaned = cleaned.replace(/\\pi/g, " pi ");
+    cleaned = cleaned.replace(/\\theta/g, " theta ");
+    cleaned = cleaned.replace(/\\alpha/g, " alpha ");
+    cleaned = cleaned.replace(/\\beta/g, " beta ");
+    // Remove remaining backslash commands
+    cleaned = cleaned.replace(/\\[a-zA-Z]+/g, " ");
+    // Replace math symbols with words
+    cleaned = cleaned.replace(/\^2/g, " squared ");
+    cleaned = cleaned.replace(/\^3/g, " cubed ");
+    cleaned = cleaned.replace(/\^(\d+)/g, " to the power of $1 ");
+    cleaned = cleaned.replace(/\^{([^}]*)}/g, " to the power of $1 ");
+    cleaned = cleaned.replace(/_(\d)/g, " sub $1 ");
+    cleaned = cleaned.replace(/_{([^}]*)}/g, " sub $1 ");
+    // Clean remaining special characters
+    cleaned = cleaned.replace(/[{}[\]|\\]/g, " ");
+    cleaned = cleaned.replace(/\*\*/g, "");
+    cleaned = cleaned.replace(/[#*_~`]/g, "");
+    // Normalize whitespace
+    cleaned = cleaned.replace(/\s+/g, " ").trim();
+    return cleaned;
   };
 
   const speakSlide = (index: number) => {
     speechSynthesis.cancel();
     if (!voiceEnabled) return;
-    const text = cleanTextForSpeech(slides[index]?.content || "");
-    if (!text) return;
-    const utt = new SpeechSynthesisUtterance(text);
-    utt.rate = speed;
-    utt.pitch = 1.05;
-    if (voices[selectedVoiceIndex]) utt.voice = voices[selectedVoiceIndex];
-    utt.onstart = () => setIsSpeaking(true);
-    utt.onend = () => setIsSpeaking(false);
-    utteranceRef.current = utt;
-    speechSynthesis.speak(utt);
+    const slideData = slides[index];
+    if (!slideData) return;
+    
+    // Build speech text: title + content
+    const titleText = slideData.title.replace(/[*#]/g, "").trim();
+    const contentText = cleanTextForSpeech(slideData.content);
+    const fullText = `${titleText}. ${contentText}`;
+    
+    if (!fullText || fullText.length < 5) return;
+    
+    // Chrome has a bug where long utterances cut off. Split into chunks.
+    const chunks = fullText.match(/.{1,200}(?:\s|$)/g) || [fullText];
+    
+    let chunkIndex = 0;
+    const speakNextChunk = () => {
+      if (chunkIndex >= chunks.length) {
+        setIsSpeaking(false);
+        return;
+      }
+      const utt = new SpeechSynthesisUtterance(chunks[chunkIndex]);
+      utt.rate = speed;
+      utt.pitch = 1.0;
+      if (voices[selectedVoiceIndex]) utt.voice = voices[selectedVoiceIndex];
+      utt.onstart = () => setIsSpeaking(true);
+      utt.onend = () => {
+        chunkIndex++;
+        speakNextChunk();
+      };
+      utt.onerror = () => {
+        setIsSpeaking(false);
+      };
+      utteranceRef.current = utt;
+      speechSynthesis.speak(utt);
+    };
+    
+    speakNextChunk();
   };
 
   const goToSlide = (index: number) => {
     const next = Math.max(0, Math.min(slides.length - 1, index));
     setCurrentSlide(next);
+    speechSynthesis.cancel();
     if (isPlaying) speakSlide(next);
   };
 
@@ -173,7 +231,7 @@ const VideoExplanation = ({ solution }: VideoExplanationProps) => {
           speakSlide(next);
           return next;
         });
-      }, 20000); // 20 seconds per slide for longer explanations
+      }, 20000);
     }
   };
 
@@ -186,16 +244,13 @@ const VideoExplanation = ({ solution }: VideoExplanationProps) => {
 
   return (
     <div className="rounded-2xl bg-gradient-card border border-border/50 shadow-elevated overflow-hidden">
-      {/* Header */}
       <div className="flex items-center gap-2 px-6 py-4 border-b border-border/50">
         <Video className="w-4 h-4 text-accent" />
         <span className="text-sm font-semibold text-foreground">AI Video Explanation</span>
         <span className="text-xs text-muted-foreground ml-auto">{currentSlide + 1} / {slides.length} · ~{totalMinutes} min</span>
       </div>
 
-      {/* Slide display */}
       <div className="relative aspect-video bg-background flex items-center justify-center p-8 md:p-12 overflow-hidden">
-        {/* Animated background */}
         <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-accent/5" />
         <motion.div
           className="absolute top-0 left-0 w-48 h-48 rounded-full bg-primary/5 blur-3xl"
@@ -208,7 +263,6 @@ const VideoExplanation = ({ solution }: VideoExplanationProps) => {
           transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
         />
 
-        {/* Slide number indicator */}
         <motion.div
           className="absolute top-4 left-4 w-10 h-10 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center text-primary font-bold text-sm"
           key={`num-${currentSlide}`}
@@ -219,7 +273,6 @@ const VideoExplanation = ({ solution }: VideoExplanationProps) => {
           {currentSlide + 1}
         </motion.div>
 
-        {/* Speaking indicator */}
         {isSpeaking && (
           <motion.div
             className="absolute top-4 right-4 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20"
@@ -242,7 +295,6 @@ const VideoExplanation = ({ solution }: VideoExplanationProps) => {
             transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
             className="relative z-10 text-center max-w-2xl w-full"
           >
-            {/* Title with animated underline */}
             <motion.h3
               className="text-lg md:text-2xl font-bold text-primary mb-4"
               initial={{ opacity: 0, y: 10 }}
@@ -258,7 +310,6 @@ const VideoExplanation = ({ solution }: VideoExplanationProps) => {
               transition={{ delay: 0.3, duration: 0.5 }}
             />
 
-            {/* Bullet points with staggered animation */}
             {slide?.bulletPoints && slide.bulletPoints.length > 0 && (
               <div className="text-left mx-auto max-w-lg mb-3 space-y-1.5">
                 {slide.bulletPoints.slice(0, 4).map((bp, i) => (
@@ -276,7 +327,6 @@ const VideoExplanation = ({ solution }: VideoExplanationProps) => {
               </div>
             )}
 
-            {/* Content */}
             <motion.p
               className="text-sm md:text-base text-foreground/80 leading-relaxed whitespace-pre-wrap"
               initial={{ opacity: 0 }}
@@ -289,13 +339,11 @@ const VideoExplanation = ({ solution }: VideoExplanationProps) => {
           </motion.div>
         </AnimatePresence>
 
-        {/* Progress bar */}
         <div className="absolute bottom-0 left-0 right-0 h-1 bg-secondary">
           <motion.div className="h-full bg-gradient-to-r from-primary to-accent" animate={{ width: `${((currentSlide + 1) / slides.length) * 100}%` }} transition={{ duration: 0.3 }} />
         </div>
       </div>
 
-      {/* Controls */}
       <div className="px-6 py-4 space-y-3">
         <div className="flex items-center justify-center gap-3">
           <div className="relative">
@@ -339,7 +387,6 @@ const VideoExplanation = ({ solution }: VideoExplanationProps) => {
           </Button>
         </div>
 
-        {/* Slide dots */}
         <div className="flex justify-center gap-1.5 flex-wrap">
           {slides.map((_, i) => (
             <button
