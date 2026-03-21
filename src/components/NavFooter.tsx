@@ -21,11 +21,10 @@ const Navbar = () => {
       <div className="hidden md:flex items-center gap-8 text-sm text-muted-foreground">
         <a href="/#features" className="hover:text-foreground transition-colors">Features</a>
         <a href="/#demo" className="hover:text-foreground transition-colors">Demo</a>
-        <a href="/#pricing" className="hover:text-foreground transition-colors">Pricing</a>
       </div>
       <Button variant="hero" size="sm" asChild>
         <Link to={user ? "/dashboard" : "/auth"}>
-          {user ? "Dashboard" : "Get Started"}
+          {user ? "Dashboard" : "Get Started — Free"}
         </Link>
       </Button>
     </motion.nav>
@@ -39,7 +38,7 @@ const Footer = () => (
         <Sparkles className="w-5 h-5 text-primary" />
         <span className="font-bold text-foreground">SnapSolve AI</span>
       </Link>
-      <p className="text-sm text-muted-foreground">© 2026 SnapSolve AI. Reimagining education through AI.</p>
+      <p className="text-sm text-muted-foreground">© 2026 SnapSolve AI. 100% Free. Reimagining education through AI.</p>
     </div>
   </footer>
 );
