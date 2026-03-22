@@ -93,7 +93,7 @@ const VideoExplanation = ({ solution }: VideoExplanationProps) => {
   const [selectedVoiceIndex, setSelectedVoiceIndex] = useState(0);
   const [showVoiceMenu, setShowVoiceMenu] = useState(false);
   const [speed, setSpeed] = useState(0.9);
-  const timerRef = useRef<ReturnType<typeof setInterval>>();
+  const timerRef = useRef<ReturnType<typeof setTimeout>>();
   const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
 
   useEffect(() => {
