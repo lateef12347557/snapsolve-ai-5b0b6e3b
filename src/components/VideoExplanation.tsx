@@ -162,18 +162,21 @@ const VideoExplanation = ({ solution }: VideoExplanationProps) => {
     return cleaned;
   };
 
-  const speakSlide = (index: number) => {
+  const speakSlide = (index: number, onFinished?: () => void) => {
     speechSynthesis.cancel();
-    if (!voiceEnabled) return;
+    if (!voiceEnabled) {
+      // If voice is off, wait a few seconds then advance
+      onFinished?.();
+      return;
+    }
     const slideData = slides[index];
-    if (!slideData) return;
+    if (!slideData) { onFinished?.(); return; }
     
-    // Build speech text: title + content
     const titleText = slideData.title.replace(/[*#]/g, "").trim();
     const contentText = cleanTextForSpeech(slideData.content);
     const fullText = `${titleText}. ${contentText}`;
     
-    if (!fullText || fullText.length < 5) return;
+    if (!fullText || fullText.length < 5) { onFinished?.(); return; }
     
     // Chrome has a bug where long utterances cut off. Split into chunks.
     const chunks = fullText.match(/.{1,200}(?:\s|$)/g) || [fullText];
@@ -182,6 +185,7 @@ const VideoExplanation = ({ solution }: VideoExplanationProps) => {
     const speakNextChunk = () => {
       if (chunkIndex >= chunks.length) {
         setIsSpeaking(false);
+        onFinished?.();
         return;
       }
       const utt = new SpeechSynthesisUtterance(chunks[chunkIndex]);
@@ -195,6 +199,7 @@ const VideoExplanation = ({ solution }: VideoExplanationProps) => {
       };
       utt.onerror = () => {
         setIsSpeaking(false);
+        onFinished?.();
       };
       utteranceRef.current = utt;
       speechSynthesis.speak(utt);
@@ -203,35 +208,45 @@ const VideoExplanation = ({ solution }: VideoExplanationProps) => {
     speakNextChunk();
   };
 
+  const playFromSlide = (index: number) => {
+    if (index >= slides.length) {
+      setIsPlaying(false);
+      setIsSpeaking(false);
+      return;
+    }
+    setCurrentSlide(index);
+    if (voiceEnabled) {
+      speakSlide(index, () => {
+        // Only advance to next slide AFTER speech fully finishes
+        playFromSlide(index + 1);
+      });
+    } else {
+      // No voice: wait 8 seconds per slide then advance
+      timerRef.current = setTimeout(() => {
+        playFromSlide(index + 1);
+      }, 8000);
+    }
+  };
+
   const goToSlide = (index: number) => {
     const next = Math.max(0, Math.min(slides.length - 1, index));
     setCurrentSlide(next);
     speechSynthesis.cancel();
-    if (isPlaying) speakSlide(next);
+    if (isPlaying) {
+      // Restart play chain from this slide
+      playFromSlide(next);
+    }
   };
 
   const togglePlay = () => {
     if (isPlaying) {
-      clearInterval(timerRef.current);
+      clearTimeout(timerRef.current);
       speechSynthesis.cancel();
       setIsPlaying(false);
       setIsSpeaking(false);
     } else {
       setIsPlaying(true);
-      speakSlide(currentSlide);
-      timerRef.current = setInterval(() => {
-        setCurrentSlide((prev) => {
-          const next = prev + 1;
-          if (next >= slides.length) {
-            clearInterval(timerRef.current);
-            setIsPlaying(false);
-            speechSynthesis.cancel();
-            return prev;
-          }
-          speakSlide(next);
-          return next;
-        });
-      }, 20000);
+      playFromSlide(currentSlide);
     }
   };
 
