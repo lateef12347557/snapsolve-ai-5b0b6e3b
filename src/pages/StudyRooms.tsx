@@ -224,12 +224,16 @@ const StudyRooms = () => {
                           <Copy className="w-3.5 h-3.5" />
                         </button>
                       )}
-                      <button onClick={(e) => archiveRoom(e, room.id)} className="p-1.5 rounded-lg text-muted-foreground hover:text-accent hover:bg-accent/10 transition-colors" title="Archive">
-                        <Archive className="w-3.5 h-3.5" />
-                      </button>
-                      <button onClick={(e) => deleteRoom(e, room.id)} className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors" title="Delete">
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
+                      {user?.id === room.user_id && (
+                        <>
+                          <button onClick={(e) => archiveRoom(e, room.id)} className="p-1.5 rounded-lg text-muted-foreground hover:text-accent hover:bg-accent/10 transition-colors" title="Archive">
+                            <Archive className="w-3.5 h-3.5" />
+                          </button>
+                          <button onClick={(e) => deleteRoom(e, room.id)} className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors" title="Delete">
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </>
+                      )}
                     </div>
                   </div>
                   <div className="flex items-center justify-between">
