@@ -115,7 +115,7 @@ const VideoExplanation = ({ solution }: VideoExplanationProps) => {
     loadVoices();
     speechSynthesis.addEventListener("voiceschanged", loadVoices);
     return () => {
-      clearInterval(timerRef.current);
+      clearTimeout(timerRef.current);
       speechSynthesis.cancel();
       speechSynthesis.removeEventListener("voiceschanged", loadVoices);
     };
